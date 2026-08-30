@@ -1,0 +1,12 @@
+{
+  "name": "is-he-virgin",
+  "version": "1.0.0",
+  "description": "Virgin.md があるかだけを見る CLI",
+  "bin": {
+    "ishevirgin": "bin/ishevirgin.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
