@@ -6,9 +6,9 @@ const path = require("node:path");
 const DEFAULT_OWNER = "KasaBranca";
 const DEFAULT_REPO = "IsHeVirgin";
 const DEFAULT_MARKER = "Virgin.md";
-const DEFAULT_REF = "main";
 const REQUEST_TIMEOUT_MS = 10_000;
 const NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+const RATE_LIMIT_MESSAGE = "GitHub API rate limit reached. Set GITHUB_TOKEN to raise it.";
 
 // The command name decides the pronoun, so one binary can speak about anyone
 const PRONOUNS = {
@@ -47,6 +47,12 @@ function pronounFor(argv1) {
   return PRONOUNS[invokedAs] || PRONOUNS.ishevirgin;
 }
 
+// Rejects any value that would not survive as a single GitHub path segment
+function requireName(value, label) {
+  if (!NAME_PATTERN.test(value)) throw new Error(`Invalid ${label} "${value}"`);
+  return value;
+}
+
 // Expands a bare owner or an owner/repo pair into an explicit target
 function parseTarget(value) {
   if (!value) return { owner: DEFAULT_OWNER, repo: DEFAULT_REPO };
@@ -54,11 +60,7 @@ function parseTarget(value) {
   const parts = value.split("/");
   if (parts.length > 2) throw new Error(`Invalid target "${value}", expected <owner> or <owner>/<repo>`);
 
-  const owner = parts[0];
-  const repo = parts.length === 2 ? parts[1] : DEFAULT_REPO;
-  if (!NAME_PATTERN.test(owner) || !NAME_PATTERN.test(repo)) throw new Error(`Invalid target "${value}"`);
-
-  return { owner, repo };
+  return { owner: requireName(parts[0], "owner"), repo: parts.length === 2 ? requireName(parts[1], "repo") : DEFAULT_REPO };
 }
 
 // Parses argv into CLI options, throwing on anything unrecognized
@@ -87,7 +89,7 @@ function parseArgs(argv) {
         options.json = true;
         break;
       case "--marker":
-        options.marker = takeValue();
+        options.marker = requireName(takeValue(), "marker");
         break;
       case "--ref":
         options.ref = takeValue();
@@ -126,38 +128,29 @@ function githubRequest(url) {
   });
 }
 
-// Performs a GitHub API GET and resolves with parsed JSON, mapping API errors to readable ones
-async function githubJson(url, notFoundMessage) {
-  const response = await githubRequest(url);
+// Reports whether the target repo exists, so a 404 on the marker can be told apart from a bad target
+async function repoExists(repoUrl) {
+  const response = await githubRequest(repoUrl);
 
-  if (response.statusCode === 404 && notFoundMessage) throw new Error(notFoundMessage);
-  if (response.statusCode === 403 && response.headers["x-ratelimit-remaining"] === "0") throw new Error("GitHub API rate limit reached. Set GITHUB_TOKEN to raise it.");
-  if (response.statusCode < 200 || response.statusCode >= 300) throw new Error(`Check failed (HTTP ${response.statusCode})`);
+  if (response.statusCode === 403 && response.headers["x-ratelimit-remaining"] === "0") throw new Error(RATE_LIMIT_MESSAGE);
 
-  try {
-    return JSON.parse(response.body);
-  } catch {
-    throw new Error("GitHub returned a malformed response");
-  }
+  return response.statusCode >= 200 && response.statusCode < 300;
 }
 
-// Resolves the ref to inspect, falling back to the target repo's default branch
-async function resolveRef(options) {
-  if (options.ref) return options.ref;
-  if (options.owner === DEFAULT_OWNER && options.repo === DEFAULT_REPO) return DEFAULT_REF;
-
-  const repo = await githubJson(`https://api.github.com/repos/${options.owner}/${options.repo}`, `No such repo: ${options.owner}/${options.repo}`);
-  return repo.default_branch || DEFAULT_REF;
-}
-
-// Resolves whether the marker file currently exists on the given ref
+// Resolves whether the marker file currently exists, letting the API pick the default branch when no ref is given
 async function checkMarker(options) {
-  const url = `https://api.github.com/repos/${options.owner}/${options.repo}/contents/${encodeURIComponent(options.marker)}?ref=${encodeURIComponent(options.ref)}`;
-  const response = await githubRequest(url);
+  const repoUrl = `https://api.github.com/repos/${encodeURIComponent(options.owner)}/${encodeURIComponent(options.repo)}`;
+  const query = options.ref ? `?ref=${encodeURIComponent(options.ref)}` : "";
+  const response = await githubRequest(`${repoUrl}/contents/${encodeURIComponent(options.marker)}${query}`);
 
   if (response.statusCode >= 200 && response.statusCode < 300) return true;
-  if (response.statusCode === 404) return false;
-  if (response.statusCode === 403 && response.headers["x-ratelimit-remaining"] === "0") throw new Error("GitHub API rate limit reached. Set GITHUB_TOKEN to raise it.");
+  if (response.statusCode === 403 && response.headers["x-ratelimit-remaining"] === "0") throw new Error(RATE_LIMIT_MESSAGE);
+
+  // A missing repo answers 404 exactly like a missing marker, so the repo is looked up only to explain that case
+  if (response.statusCode === 404) {
+    if (!(await repoExists(repoUrl))) throw new Error(`No such repo: ${options.owner}/${options.repo}`);
+    return false;
+  }
 
   throw new Error(`Check failed (HTTP ${response.statusCode})`);
 }
@@ -179,7 +172,7 @@ async function runCheck(options, pronoun) {
   console.log(`${pronoun.subject} ${pronoun.verb} ${virgin ? "a virgin" : "not a virgin"}`);
 }
 
-// Entry point wiring argument parsing, the pronoun and the ref resolution together
+// Entry point wiring argument parsing, the pronoun and the check together
 async function main() {
   const pronoun = pronounFor(process.argv[1]);
   const options = parseArgs(process.argv.slice(2));
@@ -194,7 +187,6 @@ async function main() {
     return;
   }
 
-  options.ref = await resolveRef(options);
   await runCheck(options, pronoun);
 }
 
