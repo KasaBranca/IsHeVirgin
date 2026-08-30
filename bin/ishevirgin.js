@@ -3,13 +3,18 @@
 const https = require("node:https");
 
 const markerUrl =
-  "https://raw.githubusercontent.com/KasaBranca/IsHeVirgin/main/Virgin.md";
+  "https://api.github.com/repos/KasaBranca/IsHeVirgin/contents/Virgin.md?ref=main";
 
 const request = https.request(
   markerUrl,
   {
-    method: "HEAD",
-    headers: { "User-Agent": "IsHeVirgin" },
+    method: "GET",
+    headers: {
+      Accept: "application/vnd.github+json",
+      "Cache-Control": "no-cache",
+      "User-Agent": "IsHeVirgin",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
   },
   (response) => {
     response.resume();
