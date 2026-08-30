@@ -31,7 +31,8 @@ ishevirgin someone            # someone/IsHeVirgin
 ishevirgin someone/theirrepo  # any repo
 ```
 
-Without `--ref`, the repo's default branch is used.
+Without `--ref`, the repo's default branch is used. `--json` reports `"ref":
+null` in that case, since the branch is resolved by GitHub rather than by the CLI.
 
 ## Options
 
