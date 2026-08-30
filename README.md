@@ -1,6 +1,6 @@
 # IsHeVirgin
 
-GitHub に `Virgin.md` があれば `童貞`、なければ `非童貞`。
+Prints `Virgin` if `Virgin.md` exists on GitHub. Otherwise, `Not a virgin`.
 
 ```sh
 npm install -g github:KasaBranca/IsHeVirgin

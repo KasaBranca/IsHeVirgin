@@ -15,26 +15,26 @@ const request = https.request(
     response.resume();
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      console.log("童貞");
+      console.log("Virgin");
       return;
     }
 
     if (response.statusCode === 404) {
-      console.log("非童貞");
+      console.log("Not a virgin");
       return;
     }
 
-    console.error(`判定失敗 (HTTP ${response.statusCode})`);
+    console.error(`Check failed (HTTP ${response.statusCode})`);
     process.exitCode = 1;
   },
 );
 
 request.setTimeout(10_000, () => {
-  request.destroy(new Error("タイムアウト"));
+  request.destroy(new Error("Request timed out"));
 });
 
 request.on("error", (error) => {
-  console.error(`判定失敗: ${error.message}`);
+  console.error(`Check failed: ${error.message}`);
   process.exitCode = 1;
 });
 

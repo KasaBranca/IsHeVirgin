@@ -1,7 +1,7 @@
 {
   "name": "is-he-virgin",
-  "version": "1.0.0",
-  "description": "Virgin.md があるかだけを見る CLI",
+  "version": "1.0.1",
+  "description": "A CLI that checks whether Virgin.md exists",
   "bin": {
     "ishevirgin": "bin/ishevirgin.js"
   },
