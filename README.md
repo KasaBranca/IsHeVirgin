@@ -1,8 +1,8 @@
 # IsHeVirgin
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-KasaBranca-ea4aaa?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/KasaBranca)
+[![Mipsync](https://img.shields.io/badge/Mipsync-Engine-6e40c9?style=for-the-badge&logo=github)](https://github.com/KasaBranca/Mipsync)
 
-**Give me money. I'm a virgin, Asian, and gay.**
+**Instead of this horseshit, check out MipsyncEngine.**
 
 Prints `Virgin` if `Virgin.md` exists on GitHub. Otherwise, `Not a virgin`.
 
