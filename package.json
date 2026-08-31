@@ -1,9 +1,12 @@
 {
   "name": "is-he-virgin",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "A CLI that checks whether Virgin.md exists",
   "bin": {
-    "ishevirgin": "bin/ishevirgin.js"
+    "ishevirgin": "bin/ishevirgin.js",
+    "isshevirgin": "bin/ishevirgin.js",
+    "istheyvirgin": "bin/ishevirgin.js",
+    "isvirgin": "bin/ishevirgin.js"
   },
   "engines": {
     "node": ">=18"
